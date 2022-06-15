@@ -3,6 +3,12 @@ from rest_framework import serializers
 from app_user.models import User
 
 
+class UserInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "name", "created_at"]
+
+
 class UserCreateSerializer(serializers.ModelSerializer):
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
@@ -21,9 +27,3 @@ class UserCreateSerializer(serializers.ModelSerializer):
             setattr(instance, key, value) if key != "password" else instance.set_password(value)
         instance.save()
         return instance
-
-
-class UserListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["id", "username", "name", "created_at"]

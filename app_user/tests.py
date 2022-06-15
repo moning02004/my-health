@@ -1,9 +1,19 @@
+import logging
+
 from django.test import TestCase
 
 from app_user.models import User
 
+logging.root.setLevel(logging.INFO)
+
 
 class UserTestCase(TestCase):
+    def setUp(self):
+        self.user = User(username="test_user", name="Test User")
+        self.user.set_password("test")
+        self.user.save()
+        self.user.refresh_from_db()
+
     def test_follow(self):
         user1 = User(username="user1@a.com", name="user1")
         user1.set_password("123")
@@ -46,3 +56,8 @@ class UserTestCase(TestCase):
         get_response = self.client.get("/users")
         self.assertEqual(get_response.status_code, 200)
         self.assertEqual(len([x for x in get_response.data if x["username"] == username]), 1)
+
+    def test_get_user(self):
+        response = self.client.get(f"/users/{self.user.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["id"], self.user.id)
