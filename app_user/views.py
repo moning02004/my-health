@@ -1,3 +1,4 @@
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.serializers import ModelSerializer
 from rest_framework.viewsets import ModelViewSet
 
@@ -16,5 +17,7 @@ class UserCreateListViewSet(ModelViewSet):
             return UserCreateSerializer
         return ModelSerializer
 
-    # def create(self, request, *args, **kwargs):
-    #     super().create(request, *args, **kwargs)
+    def check_permissions(self, request):
+        if self.action == "create":
+            return [AllowAny]
+        return [IsAuthenticated]
