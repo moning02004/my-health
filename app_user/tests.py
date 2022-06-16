@@ -64,7 +64,7 @@ class UserTestCase(TestCase):
         self.assertEqual(get_response.status_code, 200)
         self.assertEqual(len([x for x in get_response.data if x["username"] == username]), 1)
 
-    def test_get_user(self):
+    def test_get_specific_user(self):
         response = self.client.get(f"/users/{self.user.id}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["id"], self.user.id)
@@ -82,3 +82,9 @@ class UserTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password("userABCD"))
+
+    def test_delete(self):
+        user_id = self.user.id
+        response = self.client.delete(f"/users/{user_id}", content_type="application/json")
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(User.objects.filter(pk=self.user.id).exists())
