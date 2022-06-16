@@ -30,7 +30,7 @@ class UserTestCase(TestCase):
         user2.follow.add(user1)
         self.assertEqual(user1.follower.all().count(), 1)
 
-    def test_signup_user(self):
+    def test_signup(self):
         username = "test_user_1@a.com"
         form_data = {
             "username": username,
@@ -41,7 +41,16 @@ class UserTestCase(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertTrue(User.objects.filter(username=username).exists())
 
-    def test_get_users(self):
+    def test_signup_failed(self):
+        username = "test_user_1@a.com"
+        form_data = {
+            "username": username,
+            "password": "abcd",
+        }
+        response = self.client.post("/users", data=form_data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_get_list(self):
         username = "test_user_1@a.com"
         form_data = {
             "username": username,
