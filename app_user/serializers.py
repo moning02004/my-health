@@ -15,9 +15,10 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         fields = ["username", "password", "name"]
 
     def validate(self, attrs):
-        if all(list(attrs.values())):
-            return super().validate(attrs)
-        raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
+        if not self.partial:
+            if not all([attrs.get(x) for x in self.Meta.fields]):
+                raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
+        return super().validate(attrs)
 
     def create(self, validated_data):
         instance = User()
