@@ -34,8 +34,7 @@ class UserTestCase(TestCase):
         username = "test_user_1@a.com"
         form_data = {
             "username": username,
-            "password1": "abcd",
-            "password2": "abcd",
+            "password": "abcd",
             "name": "Test User One"
         }
         response = self.client.post("/users", data=form_data)
@@ -46,8 +45,7 @@ class UserTestCase(TestCase):
         username = "test_user_1@a.com"
         form_data = {
             "username": username,
-            "password1": "abcd",
-            "password2": "abcd",
+            "password": "abcd",
             "name": "Test User One"
         }
         post_response = self.client.post("/users", data=form_data)
@@ -61,3 +59,17 @@ class UserTestCase(TestCase):
         response = self.client.get(f"/users/{self.user.id}")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["id"], self.user.id)
+
+        response = self.client.get(f"/users/100")
+        self.assertEqual(response.status_code, 404)
+
+    def test_update_password(self):
+        user_id = self.user.id
+        new_password = "userABCD"
+        data = {
+            "password": new_password
+        }
+        response = self.client.patch(f"/users/{user_id}", data=data, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("userABCD"))

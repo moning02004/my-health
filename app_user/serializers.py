@@ -9,20 +9,24 @@ class UserInfoSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "name", "created_at"]
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
-    password1 = serializers.CharField(write_only=True)
-    password2 = serializers.CharField(write_only=True)
-
+class UserCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["username", "password1", "password2", "name"]
+        fields = ["username", "password", "name"]
+
+    def validate(self, attrs):
+        if all(list(attrs.values())):
+            return super().validate(attrs)
+        raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
 
     def create(self, validated_data):
         instance = User()
-        validated_data["password"] = validated_data["password1"]
-        del validated_data["password1"]
-        del validated_data["password2"]
+        for key, value in validated_data.items():
+            setattr(instance, key, value) if key != "password" else instance.set_password(value)
+        instance.save()
+        return instance
 
+    def update(self, instance, validated_data):
         for key, value in validated_data.items():
             setattr(instance, key, value) if key != "password" else instance.set_password(value)
         instance.save()
