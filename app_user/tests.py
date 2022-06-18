@@ -24,8 +24,8 @@ class UserTestCase(TestCase):
         user2.save()
 
         user1.follow.add(user2)
-        self.assertEqual(user1.following.all().count(), 1)  # 나를 Follow 하는 수
-        self.assertEqual(user1.follower.all().count(), 0)  # 내가 Follow 하는 수
+        self.assertEqual(user1.following.all().count(), 1)  # 내가 Follow 하는 수
+        self.assertEqual(user1.follower.all().count(), 0)  # 나를 Follow 하는 수
 
         user2.follow.add(user1)
         self.assertEqual(user1.follower.all().count(), 1)
@@ -88,3 +88,18 @@ class UserTestCase(TestCase):
         response = self.client.delete(f"/users/{user_id}", content_type="application/json")
         self.assertEqual(response.status_code, 204)
         self.assertFalse(User.objects.filter(pk=self.user.id).exists())
+
+    def test_follow_list(self):
+        user_id = self.user.id
+        friends = ["friend1", "friend2"]
+        for test_text in friends:
+            friend = User(username=test_text, name=test_text)
+            friend.set_password(test_text)
+            friend.save()
+            self.user.follow.add(friend)
+
+        self.assertEqual(self.user.following.all().count(), len(friends))
+
+        response = self.client.get(f"/users/{user_id}/followers")
+        self.assertEqual(response.status_code, 200)
+        print(response.data)

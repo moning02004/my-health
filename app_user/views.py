@@ -3,7 +3,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.viewsets import ModelViewSet
 
 from app_user.models import User
-from app_user.serializers import UserInfoSerializer, UserCreateUpdateSerializer
+from app_user.serializers import UserInfoSerializer, UserCreateUpdateSerializer, UserFollowSerializer
 
 
 class UserCreateListViewSet(ModelViewSet):
@@ -36,3 +36,14 @@ class UserDetailViewSet(ModelViewSet):
             return UserCreateUpdateSerializer
         if self.action == "destroy":
             return ModelSerializer
+
+
+class FollowCreateListViewSet(ModelViewSet):
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return User.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return UserFollowSerializer

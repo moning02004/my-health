@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from app_user.models import User
+from app_user.models import User, FollowUser
 
 
 class UserInfoSerializer(serializers.ModelSerializer):
@@ -32,3 +32,9 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
             setattr(instance, key, value) if key != "password" else instance.set_password(value)
         instance.save()
         return instance
+
+
+class UserFollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["username", "following", "follower"]
