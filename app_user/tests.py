@@ -91,15 +91,21 @@ class UserTestCase(TestCase):
 
     def test_follow_list(self):
         user_id = self.user.id
-        friends = ["friend1", "friend2"]
+        friends = ["friend1", "friend2", "follower1"]
         for test_text in friends:
             friend = User(username=test_text, name=test_text)
             friend.set_password(test_text)
             friend.save()
+
+            if test_text.startswith("follower"):
+                friend.follow.add(self.user)
             self.user.follow.add(friend)
 
-        self.assertEqual(self.user.following.all().count(), len(friends))
 
         response = self.client.get(f"/users/{user_id}/followers")
         self.assertEqual(response.status_code, 200)
-        print(response.data)
+
+        self.assertEqual(len(response.data["follower"]), 1)
+        self.assertEqual(len(response.data["following"]), len(friends))
+        print(response.data["following"])
+        print(response.data["follower"])

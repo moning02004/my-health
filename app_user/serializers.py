@@ -34,7 +34,26 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         return instance
 
 
+class FollowingInfoSerializer(serializers.ModelSerializer):
+    follow_user = UserInfoSerializer()
+
+    class Meta:
+        model = FollowUser
+        fields = ["follow_user", "created_at"]
+
+
+class FollowerInfoSerializer(serializers.ModelSerializer):
+    user = UserInfoSerializer()
+
+    class Meta:
+        model = FollowUser
+        fields = ["user", "created_at"]
+
+
 class UserFollowSerializer(serializers.ModelSerializer):
+    following = FollowingInfoSerializer(many=True)
+    follower = FollowerInfoSerializer(many=True)
+
     class Meta:
         model = User
         fields = ["username", "following", "follower"]
