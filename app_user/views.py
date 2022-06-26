@@ -1,9 +1,11 @@
+from rest_framework.generics import RetrieveAPIView, CreateAPIView, UpdateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.serializers import ModelSerializer
 from rest_framework.viewsets import ModelViewSet
 
 from app_user.models import User
-from app_user.serializers import UserInfoSerializer, UserCreateUpdateSerializer, UserFollowSerializer
+from app_user.serializers import UserInfoSerializer, UserCreateUpdateSerializer, UserFollowSerializer, \
+    UserFollowCreateUpdateSerializer
 
 
 class UserCreateListViewSet(ModelViewSet):
@@ -38,12 +40,11 @@ class UserDetailViewSet(ModelViewSet):
             return ModelSerializer
 
 
-class FollowCreateListViewSet(ModelViewSet):
-    permission_classes = [AllowAny]
+class FollowListAPI(RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserFollowSerializer
 
-    def get_queryset(self):
-        return User.objects.all()
 
-    def get_serializer_class(self):
-        if self.action == "retrieve":
-            return UserFollowSerializer
+class FollowOnOffAPI(CreateAPIView, UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserFollowCreateUpdateSerializer

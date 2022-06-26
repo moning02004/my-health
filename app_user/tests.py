@@ -100,12 +100,32 @@ class UserTestCase(TestCase):
             if test_text.startswith("follower"):
                 friend.follow.add(self.user)
             self.user.follow.add(friend)
-
-
+        self.client.login(username="test_user", password="test")
         response = self.client.get(f"/users/{user_id}/followers")
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(len(response.data["follower"]), 1)
         self.assertEqual(len(response.data["following"]), len(friends))
-        print(response.data["following"])
-        print(response.data["follower"])
+
+    def test_request_follow(self):
+        follow_user = User(username="follow_user1", name="follow_user1")
+        follow_user.set_password("follow_user1")
+        follow_user.save()
+        self.client.login(username="test_user", password="test")
+        response = self.client.post(f"/users/{follow_user.id}/follow")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(self.user.following.count(), 1)
+        self.assertEqual(self.user.follower.count(), 0)
+
+    def test_request_unfollow(self):
+        follow_user = User(username="follow_user1", name="follow_user1")
+        follow_user.set_password("follow_user1")
+        follow_user.save()
+        self.client.login(username="test_user", password="test")
+        self.user.follow.add(follow_user)
+        self.assertEqual(self.user.following.count(), 1)
+
+        response = self.client.put(f"/users/{follow_user.id}/unfollow")
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(self.user.following.count(), 0)
