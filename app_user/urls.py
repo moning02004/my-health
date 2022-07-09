@@ -1,17 +1,7 @@
 from django.urls import path
 
 from app_user import views
-
-list_actions = {
-    'get': 'list',
-    'post': 'create',
-}
-
-detail_actions = {
-    'get': 'retrieve',
-    'patch': 'partial_update',
-    'delete': 'destroy',
-}
+from my_health.urls import list_actions, detail_actions
 
 app_name = "app_user"
 urlpatterns = [
