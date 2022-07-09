@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from app_user.models import User
-from app_workout.models import Part
+from app_workout.models import Part, Workout
 
 
 class WorkoutTestCase(TestCase):
@@ -9,21 +9,32 @@ class WorkoutTestCase(TestCase):
         user = User.objects.create(username="test")
         user.set_password("test")
         user.save()
+        part1 = Part.objects.create(name="등")
+        part2 = Part.objects.create(name="가슴")
+
+        workout1 = Workout.objects.create(name="랫풀 다운", description="등 운동입니다.")
+        workout1.effective_part.add(part1)
+
+        workout2 = Workout.objects.create(name="벤치프레스", description="가슴 운동입니다.")
+        workout2.effective_part.add(part2)
         self.client.login(username="test", password="test")
 
     def test_list(self):
+        response = self.client.get("/workout", data={
+            "part": "등"
+        })
+        self.assertEqual(response.status_code, 200)
+
+    def test_list_all(self):
         response = self.client.get("/workout")
         self.assertEqual(response.status_code, 200)
 
     def test_create(self):
-        Part.objects.create(name="등")
         response = self.client.post("/workout", data={
             "name": "Seated Row",
             "description": "등 운동입니다.",
             "part_id": 1
         })
         self.assertEqual(response.status_code, 201)
-
         response = self.client.get("/workout")
-        print(response.data)
-
+        self.assertEqual(response.status_code, 200)
