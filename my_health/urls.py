@@ -17,10 +17,21 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+list_actions = {
+    'get': 'list',
+    'post': 'create',
+}
+
+detail_actions = {
+    'get': 'retrieve',
+    'patch': 'partial_update',
+    'delete': 'destroy',
+}
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("users", include("app_user.urls")),
-
+    path("workout", include("app_workout.urls")),
 
     path('token/', TokenObtainPairView.as_view()),
     path('token/refresh/', TokenRefreshView.as_view()),
