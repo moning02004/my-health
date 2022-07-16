@@ -5,7 +5,7 @@ from django.db import models
 # 운동 부위
 class Part(models.Model):
     name = models.CharField(max_length=10)
-    description = models.CharField(max_length=300)
+    description = models.CharField(max_length=300, null=True)
 
     def __str__(self):
         return self.name
