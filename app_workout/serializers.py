@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from app_workout.models import Workout, Part
@@ -32,13 +33,17 @@ class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
         fields = ["name", "description", "part_id", "representation_id"]
 
     def create(self, validated_data):
-        instance = Workout()
-        for key, value in validated_data.items():
-            if key in ["name", "description", "representation_id"]:
-                setattr(instance, key, value)
-        instance.registered_by = self.context["request"].user
-        instance.save()
+        try:
+            with transaction.atomic():
+                instance = Workout()
+                for key, value in validated_data.items():
+                    if key in ["name", "description", "representation_id"]:
+                        setattr(instance, key, value)
+                instance.registered_by = self.context["request"].user
+                instance.save()
 
-        for _id in validated_data["part_id"]:
-            instance.effective_part.add(Part.objects.get(pk=_id))
-        return instance
+                for _id in validated_data["part_id"]:
+                    instance.effective_part.add(Part.objects.get(pk=_id))
+                return instance
+        except Exception as e:
+            raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
