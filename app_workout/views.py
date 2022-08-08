@@ -1,8 +1,7 @@
-from django.db.models import Q
 from rest_framework import viewsets
 
 from app_workout.models import Workout, Part
-from app_workout.serializers import WorkoutInfoSerializer, WorkoutCreateUpdateSerializer
+from app_workout.serializers import WorkoutInfoSerializer, WorkoutCreateUpdateSerializer, WorkoutInfoWithPartSerializer
 
 
 class WorkoutViewSet(viewsets.ModelViewSet):
@@ -17,3 +16,13 @@ class WorkoutViewSet(viewsets.ModelViewSet):
             return WorkoutInfoSerializer
         elif self.action == "create":
             return WorkoutCreateUpdateSerializer
+
+
+class WorkoutDetailViewSet(viewsets.ModelViewSet):
+
+    def get_queryset(self):
+        return Workout.objects.all()
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return WorkoutInfoWithPartSerializer
