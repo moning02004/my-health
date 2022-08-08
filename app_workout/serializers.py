@@ -1,3 +1,5 @@
+import logging
+
 from django.db import transaction
 from rest_framework import serializers
 
@@ -46,4 +48,20 @@ class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
                     instance.effective_part.add(Part.objects.get(pk=_id))
                 return instance
         except Exception as e:
+            logging.error(type(e))
+            raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
+
+    def update(self, instance, validated_data):
+        try:
+            with transaction.atomic():
+                for key, value in validated_data.items():
+                    if key in ["name", "description", "representation_id"]:
+                        setattr(instance, key, value)
+                instance.save()
+
+                for _id in validated_data.get("part_id", []):
+                    instance.effective_part.add(Part.objects.get(pk=_id))
+                return instance
+        except Exception as e:
+            logging.error(type(e))
             raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')

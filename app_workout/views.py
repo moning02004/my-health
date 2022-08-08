@@ -26,3 +26,5 @@ class WorkoutDetailViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "retrieve":
             return WorkoutInfoWithPartSerializer
+        if self.action == "partial_update":
+            return WorkoutCreateUpdateSerializer
