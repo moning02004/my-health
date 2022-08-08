@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     # local apps
     "app_user",
+    "app_workout",
 ]
 
 MIDDLEWARE = [

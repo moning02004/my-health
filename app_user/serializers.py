@@ -83,6 +83,5 @@ class UserFollowCreateUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         current_user = self.context["request"].user
-        print(instance)
         current_user.follow.remove(instance)
         return validated_data
