@@ -9,7 +9,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.GET.get("part"):
             return Part.objects.get(name=self.request.GET["part"].strip()).workout_set.all()
-        return Workout.objects.all()
+        return Workout.objects.filter(status=self.request.GET.get("status", "PUB"))
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -21,7 +21,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
 class WorkoutDetailViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
-        return Workout.objects.all()
+        return Workout.objects.filter(status=self.request.GET.get("status", "PUB"))
 
     def get_serializer_class(self):
         if self.action == "retrieve":
