@@ -32,7 +32,7 @@ class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workout
-        fields = ["name", "description", "part_id", "representation_id"]
+        fields = ["name", "description", "part_id", "representation_id", "status"]
 
     def create(self, validated_data):
         try:
@@ -41,6 +41,8 @@ class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
                 for key, value in validated_data.items():
                     if key in ["name", "description", "representation_id"]:
                         setattr(instance, key, value)
+                    if key == "status":
+                        setattr(instance, key, str(value)[:3].upper())
                 instance.registered_by = self.context["request"].user
                 instance.save()
 
@@ -57,6 +59,8 @@ class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
                 for key, value in validated_data.items():
                     if key in ["name", "description", "representation_id"]:
                         setattr(instance, key, value)
+                    if key == "status":
+                        setattr(instance, key, str(value)[:3].upper())
                 instance.save()
 
                 for _id in validated_data.get("part_id", []):
