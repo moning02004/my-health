@@ -6,12 +6,6 @@ from rest_framework import serializers
 from app_workout.models import Workout, Part
 
 
-class PartInfoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Part
-        fields = ["name"]
-
-
 class WorkoutInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workout
@@ -19,7 +13,7 @@ class WorkoutInfoSerializer(serializers.ModelSerializer):
 
 
 class WorkoutInfoWithPartSerializer(serializers.ModelSerializer):
-    effective_part = PartInfoSerializer(many=True, read_only=True)
+    effective_part = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
 
     class Meta:
         model = Workout
@@ -27,7 +21,7 @@ class WorkoutInfoWithPartSerializer(serializers.ModelSerializer):
 
 
 class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
-    part_id = serializers.ListField(child=serializers.IntegerField(), write_only=True)
+    part_id = serializers.ListField(child=serializers.IntegerField(), write_only=True, required=True)
     representation_id = serializers.IntegerField(required=False)
 
     class Meta:
@@ -35,37 +29,29 @@ class WorkoutCreateUpdateSerializer(serializers.ModelSerializer):
         fields = ["name", "description", "part_id", "representation_id", "status"]
 
     def create(self, validated_data):
-        try:
-            with transaction.atomic():
-                instance = Workout()
-                for key, value in validated_data.items():
-                    if key in ["name", "description", "representation_id"]:
-                        setattr(instance, key, value)
-                    if key == "status":
-                        setattr(instance, key, str(value)[:3].upper())
-                instance.registered_by = self.context["request"].user
-                instance.save()
+        with transaction.atomic():
+            instance = Workout()
+            for key, value in validated_data.items():
+                if key in ["name", "description", "representation_id"]:
+                    setattr(instance, key, value)
+                if key == "status":
+                    setattr(instance, key, str(value)[:3].upper())
+            instance.registered_by = self.context["request"].user
+            instance.save()
 
-                for _id in validated_data["part_id"]:
-                    instance.effective_part.add(Part.objects.get(pk=_id))
-                return instance
-        except Exception as e:
-            logging.error(type(e))
-            raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
+            for _id in validated_data["part_id"]:
+                instance.effective_part.add(Part.objects.get(pk=_id))
+            return instance
 
     def update(self, instance, validated_data):
-        try:
-            with transaction.atomic():
-                for key, value in validated_data.items():
-                    if key in ["name", "description", "representation_id"]:
-                        setattr(instance, key, value)
-                    if key == "status":
-                        setattr(instance, key, str(value)[:3].upper())
-                instance.save()
+        with transaction.atomic():
+            for key, value in validated_data.items():
+                if key in ["name", "description", "representation_id"]:
+                    setattr(instance, key, value)
+                if key == "status":
+                    setattr(instance, key, str(value)[:3].upper())
+            instance.save()
 
-                for _id in validated_data.get("part_id", []):
-                    instance.effective_part.add(Part.objects.get(pk=_id))
-                return instance
-        except Exception as e:
-            logging.error(type(e))
-            raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
+            for _id in validated_data.get("part_id", []):
+                instance.effective_part.add(Part.objects.get(pk=_id))
+            return instance

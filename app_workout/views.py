@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import viewsets
 
 from app_workout.models import Workout, Part
@@ -5,11 +6,11 @@ from app_workout.serializers import WorkoutInfoSerializer, WorkoutCreateUpdateSe
 
 
 class WorkoutViewSet(viewsets.ModelViewSet):
-
     def get_queryset(self):
+        query = Q(status=self.request.GET.get("status", "PUB"))
         if self.request.GET.get("part"):
-            return Part.objects.get(name=self.request.GET["part"].strip()).workout_set.all()
-        return Workout.objects.filter(status=self.request.GET.get("status", "PUB"))
+            query.add(Q(effective_part__name=self.request.GET["part"]), Q.AND)
+        return Workout.objects.prefetch_related("effective_part").filter(query)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -19,9 +20,8 @@ class WorkoutViewSet(viewsets.ModelViewSet):
 
 
 class WorkoutDetailViewSet(viewsets.ModelViewSet):
-
     def get_queryset(self):
-        return Workout.objects.filter(status=self.request.GET.get("status", "PUB"))
+        return Workout.objects.prefetch_related("effective_part").filter(status=self.request.GET.get("status", "PUB"))
 
     def get_serializer_class(self):
         if self.action == "retrieve":
