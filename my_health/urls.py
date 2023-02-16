@@ -30,8 +30,7 @@ detail_actions = {
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("users", include("app_user.urls")),
-    path("workout", include("app_workout.urls")),
+    path("api", include("apps.urls")),
 
     path('token/', TokenObtainPairView.as_view()),
     path('token/refresh/', TokenRefreshView.as_view()),

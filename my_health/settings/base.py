@@ -42,9 +42,9 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
 
     # local apps
-    "app_user",
-    "app_workout",
-    "app_history",
+    "apps.account",
+    "apps.workout",
+    "apps.history",
 ]
 
 MIDDLEWARE = [
@@ -130,5 +130,5 @@ REST_FRAMEWORK = {
     ]
 }
 
-AUTH_USER_MODEL = "app_user.User"
+AUTH_USER_MODEL = "account.User"
 APPEND_SLASH = False
