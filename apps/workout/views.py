@@ -1,7 +1,7 @@
 from django.db.models import Q
 from rest_framework import viewsets
 
-from apps.workout.models import Workout, Part
+from apps.workout.models import Workout
 from apps.workout.serializers import WorkoutInfoSerializer, WorkoutCreateUpdateSerializer, WorkoutInfoWithPartSerializer
 
 

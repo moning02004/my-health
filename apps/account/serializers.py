@@ -1,87 +1,84 @@
-import logging
-
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from apps.account.models import User, FollowUser
+from apps.account.models import Account
 
 
-class UserInfoSerializer(serializers.ModelSerializer):
+class AccountInfoSerializer(serializers.ModelSerializer):
+    following_count = serializers.IntegerField()
+    follower_count = serializers.IntegerField()
+
     class Meta:
-        model = User
-        fields = ["id", "username", "name", "created_at"]
+        model = Account
+        fields = ["id", "username", "name", "description", "following_count", "follower_count"]
 
 
-class UserCreateUpdateSerializer(serializers.ModelSerializer):
+class AccountCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ["username", "password", "name"]
-
-    def validate(self, attrs):
-        if not self.partial:
-            if not all([attrs.get(x) for x in self.Meta.fields]):
-                raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
-        return super().validate(attrs)
+        model = Account
+        fields = ["id", "username", "password", "name"]
+        read_only_fields = ["id"]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'name': {'write_only': True},
+        }
 
     def create(self, validated_data):
-        instance = User()
-        for key, value in validated_data.items():
-            setattr(instance, key, value) if key != "password" else instance.set_password(value)
+        instance = Account()
+        password = validated_data.pop("password")
+        instance.set_password(password)
+        [setattr(instance, key, value) for key, value in validated_data.items()]
         instance.save()
         return instance
+
+
+class AccountUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ["id", "username", "password", "name"]
+        read_only_fields = ["id", "username"]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'name': {'write_only': True},
+        }
 
     def update(self, instance, validated_data):
-        for key, value in validated_data.items():
-            setattr(instance, key, value) if key != "password" else instance.set_password(value)
-        instance.save()
+        password = validated_data.get("password") and validated_data.pop("password")
+        do_update = False
+        if password:
+            do_update = True
+            instance.set_password(password)
+        [setattr(instance, key, value) for key, value in validated_data.items()]
+        (do_update or validated_data) and instance.save()
         return instance
 
 
-class FollowingInfoSerializer(serializers.ModelSerializer):
-    follow_user = UserInfoSerializer()
+class FollowerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ["username", "name"]
+
+
+class FollowUpdateSerializer(serializers.ModelSerializer):
+    follow = None
+    follow_user = serializers.CharField(write_only=True)
 
     class Meta:
-        model = FollowUser
-        fields = ["follow_user", "created_at"]
-
-
-class FollowerInfoSerializer(serializers.ModelSerializer):
-    user = UserInfoSerializer()
-
-    class Meta:
-        model = FollowUser
-        fields = ["user", "created_at"]
-
-
-class UserFollowSerializer(serializers.ModelSerializer):
-    following = FollowingInfoSerializer(many=True)
-    follower = FollowerInfoSerializer(many=True)
-
-    class Meta:
-        model = User
-        fields = ["username", "following", "follower"]
-
-
-class UserFollowCreateUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = []
+        model = Account
+        fields = ["follow_user"]
 
     def validate(self, attrs):
         try:
-            self.context["view"].kwargs
-        except Exception as e:
-            logging.error(type(e))
-            raise serializers.ValidationError('입력하신 내용을 확인해주십시오.')
+            self.follow = Account.objects.get(username=attrs["follow_user"])
+            if self.follow == self.context["request"].user:
+                raise ValidationError({"detail": "자기자신을 팔로우할 수 없습니다."}, code="invalid")
+        except Account.DoesNotExist:
+            raise ValidationError({"detail": "해당 사용자가 없습니다."}, code="invalid")
         return attrs
 
-    def create(self, validated_data):
-        current_user = self.context["request"].user
-        follow_user_id = self.context["view"].kwargs["pk"]
-        if User.objects.filter(pk=follow_user_id).exists():
-            current_user.follow.add(User.objects.get(pk=follow_user_id))
-        return validated_data
-
-    def update(self, instance, validated_data):
-        current_user = self.context["request"].user
-        current_user.follow.remove(instance)
-        return validated_data
+    def update(self, instance: Account, validated_data):
+        if not instance.follow.filter(follow=self.follow).exists():
+            instance.follow.add(self.follow)
+        else:
+            instance.follow.remove(self.follow)
+        return instance

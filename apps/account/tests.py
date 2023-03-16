@@ -1,131 +1,85 @@
 import logging
 
 from django.test import TestCase
+from django.urls import reverse
 
-from apps.account.models import User
+from apps.account.models import Account
 
 logging.root.setLevel(logging.INFO)
 
 
 class UserTestCase(TestCase):
-    def setUp(self):
-        self.user = User(username="test_user", name="Test User")
-        self.user.set_password("test")
-        self.user.save()
-        self.user.refresh_from_db()
+    username = "test_user"
+    password = "test"
 
-    def test_follow(self):
-        user1 = User(username="user1@a.com", name="user1")
-        user1.set_password("123")
-        user1.save()
-
-        user2 = User(username="user2@a.com", name="user2")
-        user2.set_password("123")
-        user2.save()
-
-        user1.follow.add(user2)
-        self.assertEqual(user1.following.all().count(), 1)  # 내가 Follow 하는 수
-        self.assertEqual(user1.follower.all().count(), 0)  # 나를 Follow 하는 수
-
-        user2.follow.add(user1)
-        self.assertEqual(user1.follower.all().count(), 1)
+    @classmethod
+    def setUpTestData(cls):
+        Account.objects.create_user(username=cls.username, password=cls.password, name="Test User")
+        Account.objects.create_user(username=cls.username + "1", password=cls.password, name="Test User")
+        Account.objects.create_user(username=cls.username + "2", password=cls.password, name="Test User")
 
     def test_signup(self):
-        username = "test_user_1@a.com"
         form_data = {
-            "username": username,
+            "username": "test_user_1",
             "password": "abcd",
             "name": "Test User One"
         }
-        response = self.client.post("/users", data=form_data)
+        response = self.client.post(reverse("account:list"), data=form_data)
         self.assertEqual(response.status_code, 201)
-        self.assertTrue(User.objects.filter(username=username).exists())
-
-    def test_signup_failed(self):
-        username = "test_user_1@a.com"
-        form_data = {
-            "username": username,
-            "password": "abcd",
-        }
-        response = self.client.post("/users", data=form_data)
-        self.assertEqual(response.status_code, 400)
+        self.assertTrue(Account.objects.filter(username="test_user_1").exists())
 
     def test_get_list(self):
-        username = "test_user_1@a.com"
-        form_data = {
-            "username": username,
-            "password": "abcd",
-            "name": "Test User One"
-        }
-        post_response = self.client.post("/users", data=form_data)
-        self.assertEqual(post_response.status_code, 201)
-
-        get_response = self.client.get("/users")
+        self.client.login(username=self.username, password=self.password)
+        get_response = self.client.get(reverse("account:list"))
         self.assertEqual(get_response.status_code, 200)
-        self.assertEqual(len([x for x in get_response.data if x["username"] == username]), 1)
 
     def test_get_specific_user(self):
-        response = self.client.get(f"/users/{self.user.id}")
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.get(reverse("account:single", args=(self.username,)))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["id"], self.user.id)
-
-        response = self.client.get(f"/users/100")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.data["username"], self.username)
 
     def test_update_password(self):
-        user_id = self.user.id
-        new_password = "userABCD"
-        data = {
-            "password": new_password
-        }
-        response = self.client.patch(f"/users/{user_id}", data=data, content_type="application/json")
+        self.client.login(username=self.username, password=self.password)
+        account = Account.objects.get(username=self.username)
+        response = self.client.patch(reverse("account:single", args=(self.username,)), data={
+            "password": "userABCD"
+        }, content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.check_password("userABCD"))
+        account.refresh_from_db()
+        self.assertTrue(account.check_password("userABCD"))
 
     def test_delete(self):
-        user_id = self.user.id
-        response = self.client.delete(f"/users/{user_id}", content_type="application/json")
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.delete(reverse("account:single", args=(self.username,)))
         self.assertEqual(response.status_code, 204)
-        self.assertFalse(User.objects.filter(pk=self.user.id).exists())
+        self.assertTrue(Account.objects.get(username=self.username).is_deleted)
 
-    def test_follow_list(self):
-        user_id = self.user.id
-        friends = ["friend1", "friend2", "follower1"]
-        for test_text in friends:
-            friend = User(username=test_text, name=test_text)
-            friend.set_password(test_text)
-            friend.save()
+    def test_following_list(self):
+        self.client.login(username=self.username, password=self.password)
+        account = Account.objects.get(username=self.username)
+        account.follow.add(Account.objects.get(username=self.username + "1"))
+        account.follow.add(Account.objects.get(username=self.username + "2"))
+        response = self.client.get(reverse("account:following", args=(self.username,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
 
-            if test_text.startswith("follower"):
-                friend.follow.add(self.user)
-            self.user.follow.add(friend)
-        self.client.login(username="test_user", password="test")
-        response = self.client.get(f"/users/{user_id}/followers")
+    def test_follower_list(self):
+        self.client.login(username=self.username, password=self.password)
+        account = Account.objects.get(username=self.username)
+        account1 = Account.objects.get(username=self.username + "1")
+        account1.follow.add(account)
+        response = self.client.get(reverse("account:follower", args=(self.username,)))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+
+    def test_follower_create(self):
+        self.client.login(username=self.username, password=self.password)
+        response = self.client.post(reverse("account:following", args=(self.username,)), data={
+            "follow_user": self.username + "1"
+        })
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(len(response.data["follower"]), 1)
-        self.assertEqual(len(response.data["following"]), len(friends))
-
-    def test_request_follow(self):
-        follow_user = User(username="follow_user1", name="follow_user1")
-        follow_user.set_password("follow_user1")
-        follow_user.save()
-        self.client.login(username="test_user", password="test")
-        response = self.client.post(f"/users/{follow_user.id}/follow")
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(self.user.following.count(), 1)
-        self.assertEqual(self.user.follower.count(), 0)
-
-    def test_request_unfollow(self):
-        follow_user = User(username="follow_user1", name="follow_user1")
-        follow_user.set_password("follow_user1")
-        follow_user.save()
-        self.client.login(username="test_user", password="test")
-        self.user.follow.add(follow_user)
-        self.assertEqual(self.user.following.count(), 1)
-
-        response = self.client.put(f"/users/{follow_user.id}/unfollow")
+        response = self.client.get(reverse("account:following", args=(self.username,)))
         self.assertEqual(response.status_code, 200)
-
-        self.assertEqual(self.user.following.count(), 0)
+        self.assertEqual(len(response.data), 1)
