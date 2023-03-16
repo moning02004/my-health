@@ -7,58 +7,57 @@ def user_image_path(instance, filename):
     return f'{instance.user_id}_{instance.user.username}/images/{filename}'
 
 
-class UserRole(models.Model):
-    code = models.CharField(max_length=4, primary_key=True)
-    description = models.CharField(max_length=200, null=True)
+class Account(AbstractUser):
+    first_name = None
+    last_name = None
 
-    def __str__(self):
-        return f"{self.code}: {self.description}"
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=300, default="")
+    is_deleted = models.BooleanField(default=False)
 
-
-class User(AbstractUser):
-    username = models.CharField(max_length=50, unique=True)
-    name = models.CharField(max_length=100, null=True)
-    role = models.ForeignKey(UserRole, on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, null=True)
     follow = models.ManyToManyField("self",
-                                    through="FollowUser",
-                                    symmetrical=False,
-                                    through_fields=("user", "follow_user"))
+                                    through="AccountFollow",
+                                    symmetrical=False,  # add 시 동시 추가 방지
+                                    through_fields=("account", "follow"))
 
-    def __str__(self):
-        return f"{self.name}: {self.created_at}"
+    class Meta:
+        db_table = "account"
 
 
 class Profile(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    sex = models.CharField(max_length=1, choices=[("M", "Male"), ("F", "Female")])
+    account = models.OneToOneField(Account, on_delete=models.CASCADE)
+    sex = models.CharField(max_length=1, choices=[("M", "Male"), ("F", "Female"), ("", "Other")])
     birth_date = models.DateTimeField(null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.user.name}: {self.sex}"
+    class Meta:
+        db_table = "profile"
 
 
-class ProfileImage(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+class ProfileAvatar(models.Model):
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="avatars")
+    hash_id = models.CharField(max_length=100, unique=True)
+
     file = models.ImageField(upload_to=user_image_path)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.file.name}"
+    class Meta:
+        db_table = "profile_avatar"
 
 
-class FollowUser(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, related_name="following")
-    follow_user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, related_name="follower")
+class AccountFollow(models.Model):
+    account = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="following")
+    follow = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="follower")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "account_follow"
 
 
 class Growth(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    height = models.FloatField(default=0)
-    weight = models.FloatField(default=0)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name="growth_list")
+    height = models.FloatField()
+    weight = models.FloatField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.user.name} [{self.height} / {self.weight}]"
+    class Meta:
+        db_table = "growth"
