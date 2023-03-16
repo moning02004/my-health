@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     # local apps
     "apps.account",
     "apps.workout",
-    "apps.history",
 ]
 
 MIDDLEWARE = [
@@ -128,5 +127,5 @@ REST_FRAMEWORK = {
     ]
 }
 
-AUTH_USER_MODEL = "account.User"
+AUTH_USER_MODEL = "account.Account"
 APPEND_SLASH = False
